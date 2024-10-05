@@ -75,6 +75,7 @@ const Controller = {
             userExist.userCapRemain === 0 &&
             extractMonth < extractCurrentApiCallMonth
           ) {
+            //update allocation month date as well
             const payload = {
               userCapRemain: userExist.userCapTotal,
             };
