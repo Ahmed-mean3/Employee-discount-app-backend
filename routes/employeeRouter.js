@@ -24,6 +24,7 @@ const authMiddleware = require("../Helper/middleware");
 
 route.use(authMiddleware);
 route.get("/", EmployeeController.getEmployees);
+route.get("/:id", EmployeeController.getSingleEmployees);
 // route.get("/test", EmployeeController.protected);
 // route.get("/", EmployeeController.getUsers);
 // route.post("/createDiscount", EmployeeController.createAutomaticDiscount);

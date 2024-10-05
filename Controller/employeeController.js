@@ -81,7 +81,25 @@ const AuthController = {
           let Employee = new EmployeeModel(obj);
           await Employee.save();
 
-          // return;
+          //fetch user id through user email.
+          const user = await shopify.customer.search({
+            query: `email:${userExist.email}`,
+          });
+
+          // console.log("discount value", user[0].id, discountValue, new Date());
+          // 2018-03-22T00:00:00-00:00
+          if (user.length !== 0) {
+            res
+              .send(
+                sendResponse(
+                  false,
+                  null,
+                  "User with this email already exist at shopify"
+                )
+              )
+              .status(404);
+            return;
+          }
           //add new user to shopify
           let data = JSON.stringify({
             customer: {
@@ -241,6 +259,17 @@ const AuthController = {
         .send(sendResponse(false, null, e, "Internal Server Error"))
         .status(400);
     }
+  },
+  getSingleEmployees: async (req, res) => {
+    let id = req.params.id;
+    await EmployeeModel.findById(id)
+      .then((result) => {
+        res.send(sendResponse(true, result)).status(200);
+      })
+      .catch((err) => {
+        console.log(err);
+        res.send(sendResponse(false, err, "Employee not found")).status(404);
+      });
   },
   createAutomaticDiscount: async (req, res) => {
     // GraphQL mutation
