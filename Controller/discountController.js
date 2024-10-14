@@ -42,14 +42,6 @@ const Controller = {
           const extractMonth =
             new Date(userExist.allocatedMonth).getUTCMonth() + 1;
           const extractCurrentApiCallMonth = new Date().getUTCMonth() + 1;
-          // console.log(
-          //   "user month checkup",
-          //   extractMonth,
-          //   "original",
-          //   userExist.allocatedMonth,
-          //   "extractCurrentApiCallMonth",
-          //   extractCurrentApiCallMonth
-          // );
 
           if (
             userExist.userCapRemain === 0 &&
@@ -78,6 +70,7 @@ const Controller = {
             //update allocation month date as well
             const payload = {
               userCapRemain: userExist.userCapTotal,
+              allocatedMonth: new Date.now()
             };
 
             await EmployeeModel.findByIdAndUpdate(userExist.id, payload, {
