@@ -70,7 +70,7 @@ const Controller = {
             //update allocation month date as well
             const payload = {
               userCapRemain: userExist.userCapTotal,
-              allocatedMonth: new Date.now()
+              allocatedMonth: Date.now(),
             };
 
             await EmployeeModel.findByIdAndUpdate(userExist.id, payload, {
