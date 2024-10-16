@@ -21,6 +21,10 @@ const employeeSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  employeeAssociation: {
+    type: String,
+    default: null,
+  },
 });
 
-module.exports = mongoose.model("employees", employeeSchema);
+module.exports = mongoose.model("employees_global", employeeSchema);

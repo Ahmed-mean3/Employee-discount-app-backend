@@ -26,13 +26,23 @@ dotenv.config();
 const AuthController = {
   getEmployees: async (req, res) => {
     try {
-      let { page, limit } = req.query;
+      let { page, limit, employeeAssociation } = req.query;
       if (!page) page = 1;
       if (!limit) limit = 50;
 
       const skip = (page - 1) * limit;
 
-      const result = await EmployeeModel.find().skip(skip).limit(limit);
+      if (!employeeAssociation) {
+        res
+          .send(sendResponse(false, null, "Required employee shop domain"))
+          .status(400);
+        return;
+      }
+      const result = await EmployeeModel.find({
+        employeeAssociation,
+      })
+        .skip(skip)
+        .limit(limit);
 
       if (!result) {
         res
@@ -49,7 +59,7 @@ const AuthController = {
     }
   },
   addEmployee: async (req, res) => {
-    let { email, grade, userCapTotal } = req.body;
+    let { email, grade, userCapTotal, employeeAssociation } = req.body;
     try {
       let errArr = [];
 
@@ -85,14 +95,17 @@ const AuthController = {
           return;
         } else {
           //add new user to mongodb
-          let obj = { email, grade, userCapTotal };
+          let obj = { email, grade, userCapTotal, employeeAssociation };
           obj = {
             ...obj,
             userCapRemain: userCapTotal,
           };
           let Employee = new EmployeeModel(obj);
           await Employee.save();
-
+          res
+            .send(sendResponse(true, Employee, "Employee Added Successfully"))
+            .status(200);
+          return;
           //fetch user id through user email.
           const user = await shopify.customer.search({
             query: `email:${userExist.email}`,
