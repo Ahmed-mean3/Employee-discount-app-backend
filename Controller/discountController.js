@@ -37,6 +37,7 @@ const Controller = {
             parseInt(userExist.grade)
           );
 
+          //scenario 3
           //if user remaining cap is 0 check right now order's date
           //does it ahead of allocated month of an employee
           //if so then re-allocated total cap to remaining cap. otherwise return message
@@ -134,9 +135,10 @@ const Controller = {
               .status(404);
             return;
           }
-          const discountName = `employee_${isAllocatable} /= discount_${new Date()
-            .getTime()
-            .toLocaleString("en-GB", { hour12: false })}`;
+          const discountName = `employee_${isAllocatable} /= discount ${new Date().toLocaleString(
+            "en-GB",
+            { hour12: false }
+          )}`;
           const price_rule = {};
           price_rule.title = discountName;
           price_rule.target_type = "line_item";
