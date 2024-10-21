@@ -11,13 +11,16 @@ const Controller = {
   //add order discount
   AddOrderDiscount: async (req, res) => {
     try {
-      const { employeeEmail, orderDetails } = req.body;
+      const { employeeEmail, totalShoppingAmount } = req.body;
       let errArr = [];
 
       //validation part
 
       if (!employeeEmail) {
         errArr.push("Required employee email");
+      }
+      if (!totalShoppingAmount) {
+        errArr.push("Required employee total shopping amount");
       }
       if (errArr.length > 0) {
         res
@@ -79,32 +82,45 @@ const Controller = {
           }
           // return;
 
-          //check available employee cap is greater than its grade's correspond percentage.
+          // check available employee cap is greater than its grade's correspond percentage.
           // userExist.userCapRemain
 
-          //from total cap i.e 10000 find out how much cap is user wants to be allocated i.e grade 17's => 17%
+          // from total cap i.e 10000 find out how much cap is user wants to be allocated i.e grade 17's => 17%
           // 17% / 100 * 10000 = 1700 /= discount wanted to be allocated.
-          const isAllocatable = (discountValue / 100) * userExist.userCapTotal;
 
-          if (isAllocatable > userExist.userCapRemain) {
-            res
-              .send(
-                sendResponse(
-                  false,
-                  null,
-                  `Based on user's grade ${userExist.grade}, ${discountValue}% (${isAllocatable}) discount is greater then available cap of ${userExist.userCapRemain} /=`
-                )
-              )
-              .status(404);
-            return;
-          }
+          //new game
+          //discount value is fixed 35%
+          const isAllocatable = (35 / 100) * totalShoppingAmount;
+
+          // if (isAllocatable > userExist.userCapRemain) {
+
+          //   // res
+          //   //   .send(
+          //   //     sendResponse(
+          //   //       false,
+          //   //       null,
+          //   //       `Based on user's grade ${userExist.grade}, ${discountValue}% (${isAllocatable}) discount is greater then available cap of ${userExist.userCapRemain} /=`
+          //   //     )
+          //   //   )
+          //   //   .status(404);
+          //   return;
+          // }
 
           //fetch user id through user email.
           const user = await shopify.customer.search({
             query: `email:${userExist.email}`,
           });
 
-          console.log("discount value", user[0].id, discountValue, new Date());
+          console.log(
+            "discount person id",
+            user[0].id,
+            "allocatable discount amount ",
+            isAllocatable,
+            "out of ",
+            totalShoppingAmount,
+            "at time",
+            new Date()
+          );
           // 2018-03-22T00:00:00-00:00
           if (user.length === 0) {
             res
@@ -118,10 +134,9 @@ const Controller = {
               .status(404);
             return;
           }
-          const discountName = `employee_${discountValue}%_discount_${
-            new Date().getDate() +
-            new Date().getTime().toLocaleString("en-GB", { hour12: false })
-          }`;
+          const discountName = `employee_${isAllocatable} /= discount_${new Date()
+            .getTime()
+            .toLocaleString("en-GB", { hour12: false })}`;
           const price_rule = {};
           price_rule.title = discountName;
           price_rule.target_type = "line_item";
@@ -129,7 +144,7 @@ const Controller = {
           price_rule.allocation_method = "across";
           price_rule.value_type = "percentage";
           //add that % in the payload
-          price_rule.value = `-${discountValue}.0`;
+          price_rule.value = `-35.0`;
           price_rule.customer_selection = "prerequisite";
           price_rule.prerequisite_customer_ids = [user[0].id];
           price_rule.starts_at = new Date();
@@ -162,10 +177,38 @@ const Controller = {
 
           console.log("Discount code created:", response_add_discount.data);
 
+          //Scenario 01
           //deduct allocated discounted value from user cap remaining
+
+          //scenario 02
+          // 35% of 10000 /=
+          // 3500 and available is only 2500 you give 2500 discount above but you need to update remain cap property
+          //so make cap ramain 0 because you have remaining is only 2500 which you give above in the discount payload api
+          // and now need to update remain cap. so make cap remain 0. cuz remaining cap you had already used.
           const payload = {
-            userCapRemain: userExist.userCapRemain - isAllocatable,
+            userCapRemain:
+              isAllocatable > userExist.userCapRemain
+                ? 0
+                : userExist.userCapRemain - isAllocatable,
           };
+          console.log(
+            "user balance after discount amount deduction",
+            payload.userCapRemain
+          );
+          // //no cap remaining
+          // if (isAllocatable > userExist.userCapRemain) {
+
+          //   // res
+          //   //   .send(
+          //   //     sendResponse(
+          //   //       false,
+          //   //       null,
+          //   //       `Based on user's grade ${userExist.grade}, ${discountValue}% (${isAllocatable}) discount is greater then available cap of ${userExist.userCapRemain} /=`
+          //   //     )
+          //   //   )
+          //   //   .status(404);
+          //   return;
+          // }
 
           await EmployeeModel.findByIdAndUpdate(userExist.id, payload, {
             new: true,
