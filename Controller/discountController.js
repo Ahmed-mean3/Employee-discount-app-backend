@@ -49,6 +49,13 @@ const Controller = {
             new Date(userExist.allocatedMonth).getUTCMonth() + 1;
           const extractCurrentApiCallMonth = new Date().getUTCMonth() + 1;
 
+          console.log(
+            "current month ",
+            extractCurrentApiCallMonth,
+            "allocated month",
+            extractMonth
+          );
+
           if (
             userExist.userCapRemain === 0 &&
             extractMonth === extractCurrentApiCallMonth
@@ -69,20 +76,28 @@ const Controller = {
             return;
           }
 
-          if (
-            userExist.userCapRemain === 0 &&
-            extractMonth < extractCurrentApiCallMonth
-          ) {
-            //update allocation month date as well
-            const payload = {
-              userCapRemain: userExist.userCapTotal,
-              allocatedMonth: Date.now(),
-            };
+          // if (
+          //   userExist.userCapRemain === 0 &&
+          //   extractMonth < extractCurrentApiCallMonth
+          // ) {
+          //   console.log(
+          //     "current month ",
+          //     extractCurrentApiCallMonth,
+          //     "allocated month",
+          //     extractMonth,
+          //     "user exist total cap to check",
+          //     userExist.userCapTotal
+          //   );
+          //   //update allocation month date as well
+          //   const payload = {
+          //     userCapRemain: userExist.userCapTotal,
+          //     allocatedMonth: Date.now(),
+          //   };
 
-            await EmployeeModel.findByIdAndUpdate(userExist.id, payload, {
-              new: true,
-            });
-          }
+          //   await EmployeeModel.findByIdAndUpdate(userExist.id, payload, {
+          //     new: true,
+          //   });
+          // }
           // return;
 
           // check available employee cap is greater than its grade's correspond percentage.
@@ -137,10 +152,13 @@ const Controller = {
               .status(404);
             return;
           }
-          const discountName = `employee ${isAllocatable} /= discount ${new Date().toLocaleString(
-            "en-GB",
-            { hour12: false }
-          )}`;
+          const discountName = `employee ${
+            isAllocatable > userExist.userCapRemain
+              ? userExist.userCapRemain
+              : isAllocatable
+          } /= discount ${new Date().toLocaleString("en-GB", {
+            hour12: false,
+          })}`;
           const price_rule = {};
           price_rule.title = discountName;
           price_rule.target_type = "line_item";
@@ -190,12 +208,25 @@ const Controller = {
           // 3500 and available is only 2500 you give 2500 discount above but you need to update remain cap property
           //so make cap ramain 0 because you have remaining is only 2500 which you give above in the discount payload api
           // and now need to update remain cap. so make cap remain 0. cuz remaining cap you had already used.
+
+          console.log(
+            "is this scenario 3 is ",
+            extractMonth < extractCurrentApiCallMonth,
+            "user cap",
+            userExist,
+            "total cap"
+          );
           const payload = {
             userCapRemain:
-              isAllocatable > userExist.userCapRemain
+              extractMonth < extractCurrentApiCallMonth
+                ? userExist.userCapTotal - isAllocatable
+                : isAllocatable > userExist.userCapRemain
                 ? 0
                 : userExist.userCapRemain - isAllocatable,
           };
+          if (extractMonth < extractCurrentApiCallMonth) {
+            payload.allocatedMonth = Date.now();
+          }
           console.log(
             "user balance after discount amount deduction",
             payload.userCapRemain
