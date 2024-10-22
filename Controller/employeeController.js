@@ -21,6 +21,7 @@ const randomCode = require("../Helper/generateRandom");
 const checkEmailValidity = require("../Helper/checkEmail");
 const axios = require("axios");
 var dotenv = require("dotenv");
+const getGradeToDiscount = require("../Helper/gradeToDiscount");
 dotenv.config();
 
 const AuthController = {
@@ -49,20 +50,23 @@ const AuthController = {
     }
   },
   addEmployee: async (req, res) => {
-    let { email, grade, userCapTotal } = req.body;
+    let { email, grade } = req.body;
     try {
       let errArr = [];
 
       //validation part
       if (!email) {
-        errArr.push("Required employee email");
+        errArr.push("Required employee email.");
       }
       if (!grade) {
-        errArr.push("Required employee grade");
+        errArr.push("Required employee grade.");
       }
-      if (!userCapTotal) {
-        errArr.push("Required employee Total Cap");
+      if (parseInt(grade) > 6) {
+        errArr.push("1 to 6 grade is allotable.");
       }
+
+      const userCapTotal = getGradeToDiscount(parseInt(grade));
+      console.log("user cap", userCapTotal);
       const checkEmail = checkEmailValidity(email);
       if (!checkEmail.status) {
         errArr.push(`${checkEmail.message}`);
@@ -93,9 +97,9 @@ const AuthController = {
           let Employee = new EmployeeModel(obj);
           await Employee.save();
 
-          //fetch user id through user email.
+          // fetch user id through user email.
           const user = await shopify.customer.search({
-            query: `email:${userExist.email}`,
+            query: `email:${email}`,
           });
 
           // console.log("discount value", user[0].id, discountValue, new Date());
@@ -106,7 +110,7 @@ const AuthController = {
                 sendResponse(
                   false,
                   null,
-                  "User with this email already exist at shopify"
+                  `${email} already a customer exist at shopify`
                 )
               )
               .status(404);

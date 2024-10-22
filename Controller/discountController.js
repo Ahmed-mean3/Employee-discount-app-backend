@@ -1,6 +1,5 @@
 const CourseModel = require("../models/DiscountModel");
 const sendResponse = require("../Helper/Helper");
-const getDiscountPercentage = require("../Helper/gradeToPercentDiscount");
 const EmployeeModel = require("../models/EmployeeModel");
 const shopify = require("../Helper/connectedShopify");
 const axios = require("axios");
@@ -29,13 +28,16 @@ const Controller = {
       } else {
         //match fetched employeeEmail with our mongo db employee email
         let userExist = await EmployeeModel.findOne({ email: employeeEmail });
-        if (userExist) {
+        const user = await shopify.customer.search({
+          query: `email:${employeeEmail}`,
+        });
+        if (userExist && user) {
           // console.log("user", userExist);
 
           //if emp match found get its grade and find discount % based on grades
-          const discountValue = getDiscountPercentage(
-            parseInt(userExist.grade)
-          );
+          // const discountValue = getDiscountPercentage(
+          //   parseInt(userExist.grade)
+          // );
 
           //scenario 3
           //if user remaining cap is 0 check right now order's date
@@ -135,7 +137,7 @@ const Controller = {
               .status(404);
             return;
           }
-          const discountName = `employee_${isAllocatable} /= discount ${new Date().toLocaleString(
+          const discountName = `employee ${isAllocatable} /= discount ${new Date().toLocaleString(
             "en-GB",
             { hour12: false }
           )}`;
@@ -150,6 +152,7 @@ const Controller = {
           price_rule.customer_selection = "prerequisite";
           price_rule.prerequisite_customer_ids = [user[0].id];
           price_rule.starts_at = new Date();
+          price_rule.usagelimit = 1;
           // hit post rest api of order price rule
           const orderDiscountPriceRule = await shopify.priceRule.create(
             price_rule
