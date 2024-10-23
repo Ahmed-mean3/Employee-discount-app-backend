@@ -170,7 +170,8 @@ const Controller = {
           price_rule.customer_selection = "prerequisite";
           price_rule.prerequisite_customer_ids = [user[0].id];
           price_rule.starts_at = new Date();
-          price_rule.usagelimit = 1;
+          price_rule.usage_limit = 1;
+
           // hit post rest api of order price rule
           const orderDiscountPriceRule = await shopify.priceRule.create(
             price_rule
