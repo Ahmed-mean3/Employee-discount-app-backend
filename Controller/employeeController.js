@@ -119,22 +119,22 @@ const AuthController = {
           //add new user to shopify
           let data = JSON.stringify({
             customer: {
-              first_name: email.split("@")[0],
-              last_name: email.split("@")[0],
+              // first_name: email.split("@")[0],
+              // last_name: email.split("@")[0],
               email: email,
               verified_email: false,
-              addresses: [
-                {
-                  address1: "123 Oak St",
-                  city: "Ottawa",
-                  province: "ON",
-                  phone: "555-1212",
-                  zip: "123 ABC",
-                  last_name: "Lastnameson",
-                  first_name: "Mother",
-                  country: "CA",
-                },
-              ],
+              // addresses: [
+              //   {
+              //     address1: "123 Oak St",
+              //     city: "Ottawa",
+              //     province: "ON",
+              //     phone: "555-1212",
+              //     zip: "123 ABC",
+              //     last_name: "Lastnameson",
+              //     first_name: "Mother",
+              //     country: "CA",
+              //   },
+              // ],
               password: "newpass@383",
               password_confirmation: "newpass@383",
               send_email_welcome: true,
