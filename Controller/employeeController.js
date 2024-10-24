@@ -219,9 +219,20 @@ const AuthController = {
           .send(sendResponse(false, null, "Employee with specified id Found"))
           .status(404);
       } else {
-        let updateResult = await EmployeeModel.findByIdAndUpdate(id, req.body, {
-          new: true,
-        });
+        const userCapTotal = getGradeToDiscount(parseInt(req.body.grade));
+        console.log("user cap", userCapTotal);
+        const payloatToEdit = {
+          ...req.body,
+          userCapTotal: userCapTotal,
+        };
+
+        let updateResult = await EmployeeModel.findByIdAndUpdate(
+          id,
+          payloatToEdit,
+          {
+            new: true,
+          }
+        );
         if (!updateResult) {
           res
             .send(sendResponse(false, null, "Unable to update results"))
