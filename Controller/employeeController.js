@@ -110,7 +110,7 @@ const AuthController = {
                 sendResponse(
                   false,
                   null,
-                  `${email} already a customer exist at shopify`
+                  `${email} already a customer exist at shopify\nhowerver this employee has been added at our database`
                 )
               )
               .status(404);
