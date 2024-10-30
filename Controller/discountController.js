@@ -160,7 +160,10 @@ const Controller = {
           // 35/100* 6000 = 2100
 
           // 2100
-          if (isAllocatable > userExist.userCapRemain) {
+          if (
+            isAllocatable > userExist.userCapRemain &&
+            extractMonth === extractCurrentApiCallMonth
+          ) {
             resetPercentage = `${
               -(
                 parseInt(userExist.userCapRemain) /
