@@ -172,16 +172,12 @@ const Controller = {
             }`;
           }
 
-          const discountName = `employee ${
-            isAllocatable > userExist.userCapRemain &&
-            extractMonth < extractCurrentApiCallMonth
-              ? isAllocatable
-              : isAllocatable > userExist.userCapRemain
-              ? userExist.userCapRemain
-              : isAllocatable
-          } /= discount ${new Date().toLocaleString("en-GB", {
-            hour12: false,
-          })}`;
+          const discountName = `employee discount ${new Date().toLocaleString(
+            "en-GB",
+            {
+              hour12: false,
+            }
+          )}`;
           const price_rule = {};
           price_rule.title = discountName;
           price_rule.target_type = "line_item";
