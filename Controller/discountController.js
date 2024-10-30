@@ -171,9 +171,13 @@ const Controller = {
               ) * 100
             }`;
           }
+
           const discountName = `employee ${
             isAllocatable > userExist.userCapRemain
               ? userExist.userCapRemain
+              : isAllocatable > userExist.userCapRemain &&
+                extractMonth < extractCurrentApiCallMonth
+              ? isAllocatable
               : isAllocatable
           } /= discount ${new Date().toLocaleString("en-GB", {
             hour12: false,
