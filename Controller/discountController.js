@@ -218,9 +218,10 @@ const Controller = {
             "total cap"
           );
           const payload = {
+            userCapTotal: userExist.userCapTotal,
             userCapRemain:
               extractMonth < extractCurrentApiCallMonth
-                ? userExist.userCapTotal - isAllocatable
+                ? isAllocatable - userExist.userCapTotal
                 : isAllocatable > userExist.userCapRemain
                 ? 0
                 : userExist.userCapRemain - isAllocatable,
