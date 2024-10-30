@@ -152,6 +152,22 @@ const Controller = {
               .status(404);
             return;
           }
+
+          let resetPercentage = `-35.0`;
+          //2100 > 1000
+          //1000 / 6000 * 100 = 16.666666666666668
+
+          // 35/100* 6000 = 2100
+
+          // 2100
+          if (isAllocatable > userExist.userCapRemain) {
+            resetPercentage = `${
+              -(
+                parseInt(userExist.userCapRemain) /
+                parseInt(totalShoppingAmount)
+              ) * 100
+            }`;
+          }
           const discountName = `employee ${
             isAllocatable > userExist.userCapRemain
               ? userExist.userCapRemain
@@ -166,7 +182,7 @@ const Controller = {
           price_rule.allocation_method = "across";
           price_rule.value_type = "percentage";
           //add that % in the payload
-          price_rule.value = `-35.0`;
+          price_rule.value = resetPercentage;
           price_rule.customer_selection = "prerequisite";
           price_rule.prerequisite_customer_ids = [user[0].id];
           price_rule.starts_at = new Date();
