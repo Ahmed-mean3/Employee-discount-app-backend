@@ -173,11 +173,11 @@ const Controller = {
           }
 
           const discountName = `employee ${
-            isAllocatable > userExist.userCapRemain
-              ? userExist.userCapRemain
-              : isAllocatable > userExist.userCapRemain &&
-                extractMonth < extractCurrentApiCallMonth
+            isAllocatable > userExist.userCapRemain &&
+            extractMonth < extractCurrentApiCallMonth
               ? isAllocatable
+              : isAllocatable > userExist.userCapRemain
+              ? userExist.userCapRemain
               : isAllocatable
           } /= discount ${new Date().toLocaleString("en-GB", {
             hour12: false,
