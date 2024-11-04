@@ -131,7 +131,7 @@ const Controller = {
                 sendResponse(
                   false,
                   null,
-                  `Your Shopping amount (${isAllocatable} /=) is greater then available cap (${userExist.userCapRemain} /=) for you.`
+                  `Your Shopping discount of (${isAllocatable} /=) is greater then available cap (${userExist.userCapRemain} /=) for you.`
                 )
               )
               .status(404);
