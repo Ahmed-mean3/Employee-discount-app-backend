@@ -124,6 +124,20 @@ const Controller = {
           //   return;
           // }
 
+          //scenario 4
+          if (isAllocatable > userExist.userCapRemain) {
+            res
+              .send(
+                sendResponse(
+                  false,
+                  null,
+                  `Your Shopping amount (${isAllocatable} /=) is greater then available cap (${userExist.userCapRemain} /=) for you.`
+                )
+              )
+              .status(404);
+            return;
+          }
+
           //fetch user id through user email.
           const user = await shopify.customer.search({
             query: `email:${userExist.email}`,
@@ -171,7 +185,14 @@ const Controller = {
               ) * 100
             }`;
           }
-
+          // ${
+          //   isAllocatable > userExist.userCapRemain &&
+          //   extractMonth < extractCurrentApiCallMonth
+          //     ? isAllocatable
+          //     : isAllocatable > userExist.userCapRemain
+          //     ? userExist.userCapRemain
+          //     : isAllocatable
+          // } /=
           const discountName = `employee discount ${new Date().toLocaleString(
             "en-GB",
             {
