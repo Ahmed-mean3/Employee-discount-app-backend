@@ -124,19 +124,19 @@ const Controller = {
           //   return;
           // }
 
-          //scenario 4
-          if (isAllocatable > userExist.userCapRemain) {
-            res
-              .send(
-                sendResponse(
-                  false,
-                  null,
-                  `Your Shopping discount of (${isAllocatable} /=) is greater then available cap (${userExist.userCapRemain} /=) for you.`
-                )
-              )
-              .status(404);
-            return;
-          }
+          // //scenario 4
+          // if (isAllocatable > userExist.userCapRemain) {
+          //   res
+          //     .send(
+          //       sendResponse(
+          //         false,
+          //         null,
+          //         `Your Shopping discount of (${isAllocatable} /=) is greater then available cap (${userExist.userCapRemain} /=) for you.`
+          //       )
+          //     )
+          //     .status(404);
+          //   return;
+          // }
 
           //fetch user id through user email.
           const user = await shopify.customer.search({
