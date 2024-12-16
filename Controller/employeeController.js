@@ -21,12 +21,49 @@ const randomCode = require("../Helper/generateRandom");
 const checkEmailValidity = require("../Helper/checkEmail");
 const axios = require("axios");
 var dotenv = require("dotenv");
+const Hash = require("../Helper/hashing");
+const StoreSchema = require("../models/storeModel");
 dotenv.config();
 
 const AuthController = {
   getEmployees: async (req, res) => {
     try {
       let { page, limit, employeeAssociation } = req.query;
+      // const store = await StoreSchema.findOne({
+      //   shopName: employeeAssociation,
+      // });
+
+      // if (!store) {
+      //   return res.status(404).send({
+      //     status: false,
+      //     message: "No credentials found for the shop.",
+      //   });
+      // }
+
+      // const decryptedApiKey = Hash.decrypt(store.apiKey);
+      // const decryptedApiSecret = Hash.decrypt(store.apiSecret);
+
+      // console.log("Decrypted credentials:", {
+      //   apiKey: decryptedApiKey,
+      //   apiSecret: decryptedApiSecret,
+      // });
+      // res
+      //   .send(
+      //     sendResponse(
+      //       true,
+      //       {
+      //         apiKey: decryptedApiKey,
+      //         apiSecret: decryptedApiSecret,
+      //         shopName: store.shopName,
+      //         addedAt: store.addedAt,
+      //       },
+      //       "Employee Data Found"
+      //     )
+      //   )
+      //   .status(200);
+
+      // return;
+      console.log("checkout", req.query);
       if (!page) page = 1;
       if (!limit) limit = 50;
 

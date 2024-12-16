@@ -2,19 +2,41 @@ const CourseModel = require("../models/DiscountModel");
 const sendResponse = require("../Helper/Helper");
 const getDiscountPercentage = require("../Helper/gradeToPercentDiscount");
 const EmployeeModel = require("../models/EmployeeModel");
-const shopify = require("../Helper/connectedShopify");
+// const shopify = require("../Helper/connectedShopify");
+const Shopify = require("shopify-api-node");
+
 const axios = require("axios");
 var dotenv = require("dotenv");
+const { default: StoreSchema } = require("../models/storeModel");
+const Hash = require("../Helper/hashing");
 dotenv.config();
 
 const Controller = {
   //add order discount
   AddOrderDiscount: async (req, res) => {
     try {
-      const { employeeEmail, orderDetails } = req.body;
+      const { employeeEmail, orderDetails, employeeAssociation } = req.body;
+      const store = await StoreSchema.findOne({
+        shopName: employeeAssociation,
+      });
+
+      if (!store) {
+        return res.status(404).send({
+          status: false,
+          message: "No credentials found for the shop.",
+        });
+      }
+
       let errArr = [];
 
       //validation part
+
+      if (!store) {
+        return res.status(404).send({
+          status: false,
+          message: "No credentials found for the shop.",
+        });
+      }
 
       if (!employeeEmail) {
         errArr.push("Required employee email");
@@ -24,6 +46,20 @@ const Controller = {
           .send(sendResponse(false, errArr, null, "Required All Fields"))
           .status(400);
       } else {
+        const decryptedApiKey = Hash.decrypt(store.apiKey);
+        const decryptedApiSecret = Hash.decrypt(store.apiSecret);
+
+        console.log("Decrypted credentials:", {
+          shopName: employeeAssociation,
+          apiKey: decryptedApiKey,
+          apiSecret: decryptedApiSecret,
+        });
+
+        const shopify = new Shopify({
+          shopName: employeeAssociation,
+          apiKey: decryptedApiKey,
+          password: decryptedApiSecret,
+        });
         //match fetched employeeEmail with our mongo db employee email
         let userExist = await EmployeeModel.findOne({ email: employeeEmail });
         if (userExist) {
@@ -140,7 +176,7 @@ const Controller = {
           console.log("price rule id", orderDiscountPriceRule.id);
           //hit post rest api of discount code
 
-          const discountCodesUrl = `https://${process.env.SHOPIFY_STORE_URL}/admin/api/2024-07/price_rules/${orderDiscountPriceRule.id}/discount_codes.json`;
+          const discountCodesUrl = `https://${employeeAssociation}/admin/api/2024-07/price_rules/${orderDiscountPriceRule.id}/discount_codes.json`;
           const discountCodeData = {
             discount_code: {
               code: discountName,
@@ -154,7 +190,7 @@ const Controller = {
               headers: {
                 "Content-Type": "application/json",
                 Authorization: `Basic ${Buffer.from(
-                  `${process.env.SHOPIFY_API_KEY}:${process.env.SHOPIFY_API_TOKEN}`
+                  `${decryptedApiKey}:${decryptedApiSecret}`
                 ).toString("base64")}`,
               },
             }

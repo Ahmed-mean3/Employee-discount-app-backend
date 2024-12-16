@@ -33,7 +33,7 @@ app.get("*", (req, res) => {
 });
 
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(process.env.MONGO_URI_MULTI_STORE_APP)
   .then(() => {
     app.listen(port, () => {
       console.log(
