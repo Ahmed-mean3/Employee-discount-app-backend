@@ -4,7 +4,7 @@ const algorithm = "aes-256-ctr"; // Encryption algorithm
 const secretKey = process.env.SECRET_KEY; // Store securely in env variables
 
 const Hash = {
-  encrypt: (text) => {
+  encrypt: async (text) => {
     const iv = crypto.randomBytes(16);
     const cipher = crypto.createCipheriv(
       algorithm,
@@ -18,7 +18,7 @@ const Hash = {
       content: encrypted.toString("hex"),
     });
   },
-  decrypt: (hash) => {
+  decrypt: async (hash) => {
     if (!hash || typeof hash !== "string") {
       throw new Error("Invalid hash to decrypt");
     }

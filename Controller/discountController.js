@@ -4,11 +4,10 @@ const getDiscountPercentage = require("../Helper/gradeToPercentDiscount");
 const EmployeeModel = require("../models/EmployeeModel");
 // const shopify = require("../Helper/connectedShopify");
 const Shopify = require("shopify-api-node");
-
 const axios = require("axios");
 var dotenv = require("dotenv");
-const { default: StoreSchema } = require("../models/storeModel");
 const Hash = require("../Helper/hashing");
+const StoreSchema = require("../models/StoreSchema");
 dotenv.config();
 
 const Controller = {
@@ -16,6 +15,14 @@ const Controller = {
   AddOrderDiscount: async (req, res) => {
     try {
       const { employeeEmail, orderDetails, employeeAssociation } = req.body;
+
+      if (!employeeAssociation) {
+        return res.status(404).send({
+          status: false,
+          message: "No employee association key found with data paylaod.",
+        });
+      }
+
       const store = await StoreSchema.findOne({
         shopName: employeeAssociation,
       });
@@ -29,15 +36,6 @@ const Controller = {
 
       let errArr = [];
 
-      //validation part
-
-      if (!store) {
-        return res.status(404).send({
-          status: false,
-          message: "No credentials found for the shop.",
-        });
-      }
-
       if (!employeeEmail) {
         errArr.push("Required employee email");
       }
@@ -46,15 +44,17 @@ const Controller = {
           .send(sendResponse(false, errArr, null, "Required All Fields"))
           .status(400);
       } else {
-        const decryptedApiKey = Hash.decrypt(store.apiKey);
-        const decryptedApiSecret = Hash.decrypt(store.apiSecret);
+        const decryptedApiKey = await Hash.decrypt(store.apiKey);
+        const decryptedApiSecret = await Hash.decrypt(store.apiSecret);
+
+        if (!employeeAssociation && !decryptedApiKey && !decryptedApiSecret)
+          return;
 
         console.log("Decrypted credentials:", {
           shopName: employeeAssociation,
           apiKey: decryptedApiKey,
           apiSecret: decryptedApiSecret,
         });
-
         const shopify = new Shopify({
           shopName: employeeAssociation,
           apiKey: decryptedApiKey,

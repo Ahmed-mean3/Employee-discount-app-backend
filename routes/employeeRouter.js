@@ -5,7 +5,6 @@ var dotenv = require("dotenv");
 dotenv.config();
 const authMiddleware = require("../Helper/middleware");
 
-
 route.use(authMiddleware);
 route.get("/", EmployeeController.getEmployees);
 route.get("/:id", EmployeeController.getSingleEmployees);

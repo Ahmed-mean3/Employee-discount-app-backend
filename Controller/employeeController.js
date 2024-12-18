@@ -22,7 +22,6 @@ const checkEmailValidity = require("../Helper/checkEmail");
 const axios = require("axios");
 var dotenv = require("dotenv");
 const Hash = require("../Helper/hashing");
-const StoreSchema = require("../models/storeModel");
 dotenv.config();
 
 const AuthController = {
