@@ -2,7 +2,6 @@ const CourseModel = require("../models/DiscountModel");
 const sendResponse = require("../Helper/Helper");
 const getDiscountPercentage = require("../Helper/gradeToPercentDiscount");
 const EmployeeModel = require("../models/EmployeeModel");
-// const shopify = require("../Helper/connectedShopify");
 const Shopify = require("shopify-api-node");
 const axios = require("axios");
 var dotenv = require("dotenv");
@@ -14,7 +13,7 @@ const Controller = {
   //add order discount
   AddOrderDiscount: async (req, res) => {
     try {
-      const { employeeEmail, orderDetails, employeeAssociation } = req.body;
+      const { employeeEmail, employeeAssociation } = req.body;
 
       if (!employeeAssociation) {
         return res.status(404).send({
@@ -48,27 +47,23 @@ const Controller = {
         const decryptedApiSecret = await Hash.decrypt(store.apiSecret);
 
         if (!employeeAssociation && !decryptedApiKey && !decryptedApiSecret)
-          return;
+          return res.status(404).send({
+            status: false,
+            message: "No credentials found i.e decrypted api key or api secret",
+          });
 
-        console.log("Decrypted credentials:", {
-          shopName: employeeAssociation,
-          apiKey: decryptedApiKey,
-          apiSecret: decryptedApiSecret,
-        });
         const shopify = new Shopify({
           shopName: employeeAssociation,
           apiKey: decryptedApiKey,
           password: decryptedApiSecret,
         });
+
         //match fetched employeeEmail with our mongo db employee email
         let userExist = await EmployeeModel.findOne({ email: employeeEmail });
         if (userExist) {
           // console.log("user", userExist);
 
           //if emp match found get its grade and find discount % based on grades
-          const discountValue = getDiscountPercentage(
-            parseInt(userExist.grade)
-          );
 
           //if user remaining cap is 0 check right now order's date
           //does it ahead of allocated month of an employee
@@ -120,15 +115,22 @@ const Controller = {
 
           //from total cap i.e 10000 find out how much cap is user wants to be allocated i.e grade 17's => 17%
           // 17% / 100 * 10000 = 1700 /= discount wanted to be allocated.
-          const isAllocatable = (discountValue / 100) * userExist.userCapTotal;
 
-          if (isAllocatable > userExist.userCapRemain) {
+          if (parseInt(userExist.discountValue) > userExist.userCapRemain) {
             res
               .send(
                 sendResponse(
                   false,
                   null,
-                  `Based on user's grade ${userExist.grade}, ${discountValue}% (${isAllocatable}) discount is greater then available cap of ${userExist.userCapRemain} /=`
+                  `Based on user's designated discount value, ${
+                    userExist.discountValue
+                  }${
+                    userExist.discountType.toLowerCase() === "percentage"
+                      ? "%"
+                      : "$"
+                  } discount is greater then available cap of ${
+                    userExist.userCapRemain
+                  } /=`
                 )
               )
               .status(404);
@@ -140,7 +142,60 @@ const Controller = {
             query: `email:${userExist.email}`,
           });
 
-          console.log("discount value", user[0].id, discountValue, new Date());
+          // console.log("discount value", user[0].id, discountValue, new Date());
+
+          // const delay = (ms) =>
+          //   new Promise((resolve) => setTimeout(resolve, ms));
+
+          // //input user id. user[0].id
+          // const allPriceRules = await shopify.priceRule.list();
+
+          //Add another condition in that array that only filter discount price rules that ends date time is greater then the current date time
+          // Filter price rules matching the user's ID
+          // const matchedRules = allPriceRules.filter((rule) => {
+          //   console.log("date check", new Date(`${rule.ends_at}`) > new Date());
+          //   return (
+          //     Array.isArray(rule.prerequisite_customer_ids) &&
+          //     rule.prerequisite_customer_ids.includes(user[0].id) &&
+          //     rule.ends_at &&
+          //     new Date(`${rule.ends_at}`) > new Date()
+          //   );
+          // });
+
+          // let discountCodesWithUsageLeft = [];
+
+          // if (matchedRules.length > 0) {
+          //   // Loop through each matched rule and fetch its discount codes
+          //   for (const rule of matchedRules) {
+          //     await delay(1000); // Add delay between requests
+          //     const discountCodes = await shopify.discountCode.list(rule.id);
+
+          //     // Filter discount codes based on usage count
+          //     const filteredCodes = discountCodes.filter(
+          //       (code) => code.usage_count <= 2
+          //     );
+
+          //     if (filteredCodes.length > 0) {
+          //       discountCodesWithUsageLeft.push(filteredCodes[0]); // Take the first code
+          //     }
+          //   }
+          // }
+
+          // if (discountCodesWithUsageLeft.length > 0) {
+          //   res
+          //     .send(
+          //       sendResponse(
+          //         true,
+          //         { discount_code: discountCodesWithUsageLeft[0] },
+          //         "Order Discount Fetched Successfully"
+          //       )
+          //     )
+          //     .status(200);
+          //   return;
+          // }
+
+          // return;
+
           // 2018-03-22T00:00:00-00:00
           if (user.length === 0) {
             res
@@ -154,27 +209,32 @@ const Controller = {
               .status(404);
             return;
           }
-          const discountName = `employee_${discountValue}%_discount_${
-            new Date().getDate() +
-            new Date().getTime().toLocaleString("en-GB", { hour12: false })
+          const discountName = `${userExist.discountValue}${
+            userExist.discountType.toLowerCase() === "percentage" ? "%" : "$"
+          }_discount_${
+            new Date().toLocaleDateString() +
+            "-" +
+            new Date().toLocaleTimeString()
           }`;
           const price_rule = {};
           price_rule.title = discountName;
           price_rule.target_type = "line_item";
           price_rule.target_selection = "all";
           price_rule.allocation_method = "across";
-          price_rule.value_type = "percentage";
-          //add that % in the payload
-          price_rule.value = `-${discountValue}.0`;
+          price_rule.value_type = userExist.discountType.toLowerCase();
+          price_rule.value = `-${userExist.discountValue}.0`;
           price_rule.customer_selection = "prerequisite";
           price_rule.prerequisite_customer_ids = [user[0].id];
           price_rule.starts_at = new Date();
-          // hit post rest api of order price rule
+          price_rule.usage_limit = 1;
+          price_rule.allocation_limit = 1;
+          const endDate = new Date(price_rule.starts_at);
+          endDate.setMinutes(endDate.getMinutes() + 30);
+          price_rule.ends_at = endDate;
           const orderDiscountPriceRule = await shopify.priceRule.create(
             price_rule
           );
-          console.log("price rule id", orderDiscountPriceRule.id);
-          //hit post rest api of discount code
+          // console.log("price rule id", orderDiscountPriceRule.id);
 
           const discountCodesUrl = `https://${employeeAssociation}/admin/api/2024-07/price_rules/${orderDiscountPriceRule.id}/discount_codes.json`;
           const discountCodeData = {
@@ -196,11 +256,12 @@ const Controller = {
             }
           );
 
-          console.log("Discount code created:", response_add_discount.data);
+          // console.log("Discount code created:", response_add_discount.data);
 
           //deduct allocated discounted value from user cap remaining
           const payload = {
-            userCapRemain: userExist.userCapRemain - isAllocatable,
+            userCapRemain:
+              userExist.userCapRemain - parseInt(userExist.discountValue),
           };
 
           await EmployeeModel.findByIdAndUpdate(userExist.id, payload, {
@@ -241,7 +302,7 @@ const Controller = {
         );
     }
   },
-  ApplyOrderDiscount: async (req, res) => {
+  ApplyOrderDiscount: (req, res) => {
     const { checkoutId, discountCode } = req.body;
     try {
       let errArr = [];
@@ -335,7 +396,7 @@ const Controller = {
         axios
           .request(config)
           .then((response) => {
-            console.log("responsess", JSON.stringify(response.data));
+            // console.log("responsess", JSON.stringify(response.data));
             res.send(sendResponse(true, "ok", "applying")).status(200);
           })
           .catch((error) => {
@@ -361,113 +422,6 @@ const Controller = {
                 sendResponse(false, null, errorMessage, "Internal Server Error")
               );
           });
-
-        return;
-        //     const query = `mutation applyDiscountCodeToCheckout($checkoutId: ID!, $discountCode: String!) {
-        //   checkoutDiscountCodeApplyV2(checkoutId: $checkoutId, discountCode: $discountCode) {
-        //     checkout {
-        //       discountApplications(first: 10) {
-        //         edges {
-        //           node {
-        //             allocationMethod
-        //             targetSelection
-        //             targetType
-        //           }
-        //         }
-        //       }
-        //     }
-        //     checkoutUserErrors {
-        //       message
-        //       code
-        //       field
-        //     }
-        //   }
-        // }`;
-
-        //     // Variables for the automatic discount
-        //     const variables = {
-        //       checkoutId: `gid://shopify/Checkout/${checkoutId}`,
-        //       discountCode: discountCode,
-        //     };
-        // Use the Shopify client to make a GraphQL request
-        const resp = await shopify.graphql(query, variables);
-
-        // Handle user errors from the Shopify API
-        if (resp.userErrors && resp.userErrors.length > 0) {
-          console.error("User Errors:", resp.userErrors);
-          return res
-            .status(400)
-            .send(sendResponse(false, resp.userErrors, "User Errors occurred"));
-        }
-        // Success response
-        // const { automaticDiscountNode } = resp.discountAutomaticBasicCreate;
-        console.log("disocunt sucess apply", resp);
-        res
-          .status(201)
-          .send(
-            sendResponse(true, resp, "Automatic discount created successfully")
-          );
-
-        return;
-        //   const query = `
-        //   mutation {
-        //     checkoutDiscountCodeApply(checkoutId: "${checkoutId}", discountCode: "${discountCode}") {
-        //       checkout {
-        //         id
-        //         discountApplications(first: 5) {
-        //           edges {
-        //             node {
-        //               ... on DiscountCodeApplication {
-        //                 code
-        //               }
-        //             }
-        //           }
-        //         }
-        //       }
-        //       userErrors {
-        //         field
-        //         message
-        //       }
-        //     }
-        //   }
-        // `;
-
-        // const resp = await shopify.graphql(query);
-
-        // // Handle user errors from the Shopify API
-        // if (resp.userErrors && resp.userErrors.length > 0) {
-        //   console.error("User Errors:", resp.userErrors);
-        //   return res
-        //     .status(400)
-        //     .send(sendResponse(false, resp.userErrors, "User Errors occurred"));
-        // }
-
-        // // Success response
-        // // const { automaticDiscountNode } = resp.discountAutomaticBasicCreate;
-        // console.log("success response", resp);
-        // res
-        //   .status(201)
-        //   .send(
-        //     sendResponse(true, resp, "Automatic discount created successfully")
-        //   );
-        // return;
-        const response = await fetch(
-          "https://your-shopify-store.myshopify.com/api/2023-04/graphql.json",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Shopify-Storefront-Access-Token":
-                "your-storefront-access-token",
-            },
-            body: JSON.stringify({ query }),
-          }
-        );
-        const result = await response.json();
-        console.log(result.data);
-        res
-          .send(sendResponse(true, result.data, "Save Successfully"))
-          .status(200);
       }
     } catch (e) {
       console.log(e);

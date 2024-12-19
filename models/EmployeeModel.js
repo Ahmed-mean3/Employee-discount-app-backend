@@ -5,10 +5,15 @@ const employeeSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  grade: {
+  discountValue: {
     type: String,
     required: true,
   },
+  discountType: {
+    type: String,
+    required: true,
+  },
+
   userCapTotal: {
     type: Number,
     require: true,
@@ -17,6 +22,7 @@ const employeeSchema = new mongoose.Schema({
     type: Number,
     require: true,
   },
+
   allocatedMonth: {
     type: Date,
     default: Date.now,

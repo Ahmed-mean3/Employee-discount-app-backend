@@ -16,12 +16,13 @@ const upload = multer({ storage });
 const path = require("path");
 const whatsApp = require("../Helper/whatsAppVerification");
 const { HandleFileUpload } = require("../Helper/fileUploadHelper");
-const shopify = require("../Helper/connectedShopify");
 const randomCode = require("../Helper/generateRandom");
 const checkEmailValidity = require("../Helper/checkEmail");
 const axios = require("axios");
 var dotenv = require("dotenv");
 const Hash = require("../Helper/hashing");
+const Shopify = require("shopify-api-node");
+const StoreSchema = require("../models/StoreSchema");
 dotenv.config();
 
 const AuthController = {
@@ -62,7 +63,7 @@ const AuthController = {
       //   .status(200);
 
       // return;
-      console.log("checkout", req.query);
+      // console.log("checkout", req.query);
       if (!page) page = 1;
       if (!limit) limit = 50;
 
@@ -95,7 +96,13 @@ const AuthController = {
     }
   },
   addEmployee: async (req, res) => {
-    let { email, grade, userCapTotal, employeeAssociation } = req.body;
+    let {
+      email,
+      userCapTotal,
+      employeeAssociation,
+      discountType,
+      discountValue,
+    } = req.body;
     try {
       let errArr = [];
 
@@ -103,16 +110,26 @@ const AuthController = {
       if (!email) {
         errArr.push("Required employee email");
       }
-      if (!grade) {
-        errArr.push("Required employee grade");
-      }
+
       if (!userCapTotal) {
         errArr.push("Required employee Total Cap");
       }
+      if (!discountValue) {
+        errArr.push("Required employee discount Value");
+      }
+      if (!discountType) {
+        errArr.push("Required discount type");
+      }
+
+      if (!employeeAssociation) {
+        errArr.push("Required employee association");
+      }
+
       const checkEmail = checkEmailValidity(email);
       if (!checkEmail.status) {
         errArr.push(`${checkEmail.message}`);
       }
+
       if (errArr.length > 0) {
         res
           .send(sendResponse(false, errArr, null, "Required All Fields"))
@@ -122,7 +139,7 @@ const AuthController = {
         let userExist = await EmployeeModel.findOne({ email: email });
 
         if (userExist) {
-          console.log(userExist, "user");
+          // console.log(userExist, "user");
           res
             .send(
               sendResponse(false, null, "User with this email already exist")
@@ -131,20 +148,53 @@ const AuthController = {
           return;
         } else {
           //add new user to mongodb
-          let obj = { email, grade, userCapTotal, employeeAssociation };
+          let obj = {
+            email,
+            userCapTotal,
+            employeeAssociation,
+            discountType,
+            discountValue,
+          };
           obj = {
             ...obj,
             userCapRemain: userCapTotal,
           };
           let Employee = new EmployeeModel(obj);
           await Employee.save();
-          res
-            .send(sendResponse(true, Employee, "Employee Added Successfully"))
-            .status(200);
-          return;
+          // res
+          //   .send(sendResponse(true, Employee, "Employee Added Successfully"))
+          //   .status(200);
+          // return;
           //fetch user id through user email.
+
+          const store = await StoreSchema.findOne({
+            shopName: employeeAssociation,
+          });
+
+          if (!store) {
+            return res.status(404).send({
+              status: false,
+              message: "No credentials found for the shop.",
+            });
+          }
+          const decryptedApiKey = await Hash.decrypt(store.apiKey);
+          const decryptedApiSecret = await Hash.decrypt(store.apiSecret);
+
+          if (!employeeAssociation && !decryptedApiKey && !decryptedApiSecret)
+            return res.status(404).send({
+              status: false,
+              message:
+                "No credentials found i.e decrypted api key or api secret",
+            });
+
+          const shopify = new Shopify({
+            shopName: employeeAssociation,
+            apiKey: decryptedApiKey,
+            password: decryptedApiSecret,
+          });
+
           const user = await shopify.customer.search({
-            query: `email:${userExist.email}`,
+            query: `email:${email}`,
           });
 
           // console.log("discount value", user[0].id, discountValue, new Date());
@@ -189,9 +239,9 @@ const AuthController = {
           let config = {
             method: "post",
             maxBodyLength: Infinity,
-            url: `https://${process.env.SHOPIFY_STORE_URL}/admin/api/2024-07/customers.json`,
+            url: `https://${employeeAssociation}/admin/api/2024-07/customers.json`,
             headers: {
-              "X-Shopify-Access-Token": `${process.env.SHOPIFY_API_TOKEN}`,
+              "X-Shopify-Access-Token": `${decryptedApiSecret}`,
               "Content-Type": "application/json",
             },
             data: data,
@@ -293,7 +343,7 @@ const AuthController = {
     try {
       let id = req.params.id;
       let result = await EmployeeModel.findById(id);
-      console.log("resultant", result);
+      // console.log("resultant", result);
 
       if (!result) {
         res
